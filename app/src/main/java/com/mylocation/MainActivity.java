@@ -13,15 +13,23 @@ import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.util.Log;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -60,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void getLocation() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,Manifest.permission.WRITE_EXTERNAL_STORAGE)==PackageManager.PERMISSION_GRANTED) {
             fusedLocationProviderClient.getLastLocation().addOnCompleteListener(new OnCompleteListener<Location>() {
                 @Override
                 public void onComplete(@NonNull Task<Location> task) {
@@ -72,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
                             Log.d(TAG, "onComplete: address " + address.get(0));
                             locations+=address.get(0).getLocality() + " " + address.get(0).getAddressLine(0)+"\n";
                             tvAddress.setText(locations);
+                            saveLocation("Currentlocation",locations);
                         } catch (Exception e) {
                             e.printStackTrace();
 
@@ -80,7 +89,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         } else {
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
         }
 
 
@@ -113,5 +122,28 @@ public class MainActivity extends AppCompatActivity {
                 handler.postDelayed(this, FIVE_SECONDS);
             }
         }, FIVE_SECONDS);
+    }
+
+    public void saveLocation(String sFileName, String message) {
+        try {
+            File root = new File(Environment.getExternalStorageDirectory(), "Mylocation");
+            if (!root.exists()) {
+                root.mkdirs();
+            }
+            File filename = new File(root, sFileName);
+            FileWriter writer = new FileWriter(filename);
+            writer.append(getCurrentTime()+ " "+message);
+            writer.flush();
+            writer.close();
+            Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    private String getCurrentTime(){
+        String time="";
+        SimpleDateFormat df=new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+        time=df.format(new Date());
+        return time;
     }
 }
